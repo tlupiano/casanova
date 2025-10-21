@@ -63,7 +63,7 @@
 <div class="container mx-auto px-4 py-8 max-w-6xl">
     <!-- Cabeçalho -->
     <div class="text-center mb-8">
-        <!-- ALTERAÇÃO: Título elegante com o novo ícone SVG -->
+        <!-- Título elegante com o novo ícone SVG -->
         <div class="flex flex-col items-center mb-8">
             <div class="w-16 h-16 mb-3">
                 <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 503.467 503.467" xml:space="preserve">
@@ -298,7 +298,7 @@
                     }
 
                     return `
-                    <div class="item-row p-2 rounded-lg ${isComplete ? 'item-complete' : ''}" 
+                    <div class="item-row group p-2 rounded-lg ${isComplete ? 'item-complete' : ''}" 
                          ${!isComplete ? `data-name="${item.name.replace(/"/g, '&quot;')}" data-value="${item.value}" data-shares-total="${item.sharesTotal}" data-shares-bought="${item.sharesBought}"` : ''}>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center flex-1 min-w-0">
@@ -307,7 +307,7 @@
                                 ` : `
                                     <svg class="w-5 h-5 mr-3 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
                                 `}
-                                <label class="item-name flex-1 text-sm text-gray-700">${item.name}</label>
+                                <label class="item-name flex-1 text-sm ${!isComplete ? 'text-blue-600 font-medium group-hover:underline' : 'text-gray-700'}">${item.name}</label>
                             </div>
                             ${valueDisplay}
                         </div>
