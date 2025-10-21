@@ -31,6 +31,10 @@
             background-color: #f3f4f6;
             cursor: pointer;
         }
+        /* ALTERAÇÃO: Garante que o cursor de ponteiro se aplique a toda a área interna do item. */
+        .item-row:not(.item-complete):hover * {
+            cursor: pointer;
+        }
         .item-complete .item-name {
             text-decoration: line-through;
             opacity: 0.6;
@@ -282,7 +286,7 @@
             <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
                 <div class="progress-bar bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full" style="width: ${progressPercent}%"></div>
             </div>
-            <div class="space-y-2 max-h-72 overflow-y-auto pr-2">
+            <div class="flex flex-col divide-y divide-gray-200 max-h-72 overflow-y-auto pr-2">
                 ${items.map(item => {
                     const isComplete = item.sharesBought >= item.sharesTotal;
                     const isShared = item.sharesTotal > 1;
@@ -298,7 +302,7 @@
                     }
 
                     return `
-                    <div class="item-row group p-2 rounded-lg ${isComplete ? 'item-complete' : ''}" 
+                    <div class="item-row group p-3 ${isComplete ? 'item-complete' : ''}" 
                          ${!isComplete ? `data-name="${item.name.replace(/"/g, '&quot;')}" data-value="${item.value}" data-shares-total="${item.sharesTotal}" data-shares-bought="${item.sharesBought}"` : ''}>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center flex-1 min-w-0">
