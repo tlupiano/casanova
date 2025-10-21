@@ -27,11 +27,11 @@
         .item-row {
             transition: background-color 0.2s ease-in-out;
         }
-        .item-row:not(.item-checked):hover {
+        .item-row:not(.item-complete):hover {
             background-color: #f3f4f6;
             cursor: pointer;
         }
-        .item-checked label {
+        .item-complete .item-name {
             text-decoration: line-through;
             opacity: 0.6;
         }
@@ -63,8 +63,8 @@
 <div class="container mx-auto px-4 py-8 max-w-6xl">
     <!-- Cabeçalho -->
     <div class="text-center mb-8">
-        <h1 id="main-title" class="elegant-title text-4xl text-gray-800 mb-4">🏠 Lista de Presentes</h1>
-        <p id="subtitle" class="text-lg text-gray-600 mb-6">Escolha um item e contribua via PIX de forma fácil e rápida!</p>
+        <h1 id="main-title" class="elegant-title text-4xl text-gray-800 mb-4">🏠 Lista de Presentes Casa Nova</h1>
+        <p id="subtitle" class="text-lg text-gray-600 mb-6">Escolha um item ou contribua com cotas para os presentes de maior valor!</p>
         
         <!-- Card de Progresso -->
         <div class="floating-progress bg-white rounded-xl shadow-lg p-6 mb-8 border border-gray-200">
@@ -88,11 +88,20 @@
 <!-- Modal PIX -->
 <div id="pix-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
     <div class="bg-white rounded-2xl p-6 md:p-8 max-w-sm w-full mx-auto text-center shadow-2xl">
-        <h3 id="modal-title" class="text-2xl font-bold text-gray-800 mb-2">Presentear com PIX</h3>
+        <h3 class="text-2xl font-bold text-gray-800 mb-2">Presentear com PIX</h3>
         <p id="modal-item-name" class="text-lg text-gray-600 mb-4"></p>
-        <div id="qrcode-container" class="flex justify-center mb-4 p-4 bg-gray-100 rounded-lg">
-             <!-- QR Code será renderizado aqui -->
+        
+        <!-- Seletor de Cotas -->
+        <div id="shares-selector" class="mb-4 hidden">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Selecione a quantidade de cotas:</label>
+            <div class="flex items-center justify-center space-x-4">
+                <button id="shares-minus" class="w-10 h-10 bg-gray-200 rounded-full text-lg font-bold">-</button>
+                <input id="shares-quantity" type="number" value="1" min="1" class="w-16 text-center border-gray-300 rounded-lg" readonly>
+                <button id="shares-plus" class="w-10 h-10 bg-gray-200 rounded-full text-lg font-bold">+</button>
+            </div>
         </div>
+
+        <div id="qrcode-container" class="flex justify-center mb-4 p-4 bg-gray-100 rounded-lg"></div>
         <p class="text-sm text-gray-500 mb-2">ou copie o código abaixo:</p>
         <div class="relative mb-4">
             <textarea id="pix-code" rows="3" class="w-full text-xs p-2 border border-gray-300 rounded-lg bg-gray-50 break-all" readonly></textarea>
@@ -108,30 +117,24 @@
 <script>
     // --- CONFIGURAÇÕES PRINCIPAIS ---
     const SPREADSHEET_URL = 'https://docs.google.com/spreadsheets/d/18e84P7SwfC6SZexhYRwfWwsbvQCA3w6J5C6hT7DEsrc/gviz/tq?tqx=out:csv&sheet=Página1';
-    const PIX_KEY = 'thiago.lupiano@outlook.com'; // Sua chave PIX (email, CPF, celular, etc.)
-    const PIX_NAME = 'Thiago Lupiano'; // Seu nome completo que aparecerá no PIX
-    const PIX_CITY = 'PRADO'; // Sua cidade (sem acentos, até 15 caracteres)
+    const PIX_KEY = 'thiago.lupiano@outlook.com';
+    const PIX_NAME = 'Thiago Lupiano';
+    const PIX_CITY = 'PRADO';
     // ---------------------------------
 
     let allItems = [];
 
-    // Formata um número para o padrão de moeda brasileiro
-    const formatCurrency = (value) => {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
-    };
+    const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-    // --- FUNÇÕES PARA GERAR O CÓDIGO PIX MANUALMENTE ---
     const formatField = (id, value) => {
         const len = value.length.toString().padStart(2, '0');
         return `${id}${len}${value}`;
     };
 
     const generatePixCode = (key, name, city, value, message) => {
-        // CORREÇÃO: Sanitiza os campos para remover caracteres inválidos e garantir conformidade
         const sanitizedName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 25);
         const sanitizedCity = city.normalize("NFD").replace(/[\u0300-\u036f]/g, "").substring(0, 15);
         const txid = message.normalize("NFD").replace(/[^a-zA-Z0-9]/g, '').substring(0, 25) || 'PRESENTECASANOVA';
-
         const payload = [
             formatField('00', '01'),
             formatField('26', `0014br.gov.bcb.pix01${key.length.toString().padStart(2, '0')}${key}`),
@@ -143,10 +146,7 @@
             formatField('60', sanitizedCity),
             formatField('62', formatField('05', txid)),
         ];
-        
-        let pixString = payload.join('');
-        pixString += '6304';
-
+        let pixString = payload.join('') + '6304';
         let crc = 0xFFFF;
         for (let i = 0; i < pixString.length; i++) {
             crc ^= (pixString.charCodeAt(i) << 8);
@@ -154,16 +154,14 @@
                 crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
             }
         }
-        
-        const crc16 = (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
-        return pixString + crc16;
+        return pixString + (crc & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
     };
-    // -------------------------------------------------------------
 
     async function fetchData() {
         try {
-            const response = await fetch(SPREADSHEET_URL);
-            if (!response.ok) throw new Error('Erro ao buscar dados. Verifique se a planilha foi publicada na web.');
+            const urlWithCacheBuster = `${SPREADSHEET_URL}&timestamp=${new Date().getTime()}`;
+            const response = await fetch(urlWithCacheBuster);
+            if (!response.ok) throw new Error('Erro ao buscar dados.');
             
             const csvText = await response.text();
             const rows = csvText.split('\n').map(row => row.trim());
@@ -171,20 +169,22 @@
             
             const nameIndex = headers.indexOf('name');
             const categoryIndex = headers.indexOf('category');
-            const checkedIndex = headers.indexOf('checked');
             const valueIndex = headers.indexOf('value');
+            const sharesTotalIndex = headers.indexOf('shares_total');
+            const sharesBoughtIndex = headers.indexOf('shares_bought');
 
-            if ([nameIndex, categoryIndex, checkedIndex, valueIndex].includes(-1)) {
-                throw new Error('Planilha não contém as colunas necessárias: "name", "category", "checked", "value".');
+            if ([nameIndex, categoryIndex, valueIndex, sharesTotalIndex, sharesBoughtIndex].includes(-1)) {
+                throw new Error('Planilha não contém as colunas: "name", "category", "value", "shares_total", "shares_bought".');
             }
 
-            allItems = rows.slice(1).map((row, index) => {
+            allItems = rows.slice(1).map((row) => {
                 const values = row.split(',').map(value => value.replace(/"/g, '').trim());
                 return {
                     name: values[nameIndex] || '',
                     category: values[categoryIndex] || 'Sem Categoria',
-                    checked: (values[checkedIndex] || '').toUpperCase() === 'TRUE',
                     value: parseFloat(values[valueIndex]) || 0,
+                    sharesTotal: parseInt(values[sharesTotalIndex]) || 1,
+                    sharesBought: parseInt(values[sharesBoughtIndex]) || 0,
                 };
             }).filter(item => item.name && item.value > 0);
 
@@ -211,8 +211,7 @@
         });
         container.innerHTML = '';
         Object.entries(categories).forEach(([categoryName, items]) => {
-            const categoryCard = createCategoryCard(categoryName, items);
-            container.appendChild(categoryCard);
+            container.appendChild(createCategoryCard(categoryName, items));
         });
     }
 
@@ -220,60 +219,110 @@
         const card = document.createElement('div');
         card.className = 'category-card bg-white rounded-xl shadow-lg p-6 border border-gray-200';
         
-        const checkedCount = items.filter(item => item.checked).length;
-        const totalCount = items.length;
-        const progressPercent = totalCount > 0 ? Math.round((checkedCount / totalCount) * 100) : 0;
+        const totalItems = items.length;
+        const completedItems = items.filter(item => item.sharesBought >= item.sharesTotal).length;
+        const progressPercent = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
 
         card.innerHTML = `
             <div class="flex items-center justify-between mb-4">
                 <h3 class="text-xl font-semibold text-gray-800">${categoryName}</h3>
-                <span class="text-sm font-medium px-3 py-1 rounded-full ${progressPercent === 100 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">${checkedCount}/${totalCount}</span>
+                <span class="text-sm font-medium px-3 py-1 rounded-full ${progressPercent === 100 ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'}">${completedItems}/${totalItems}</span>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
                 <div class="progress-bar bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full" style="width: ${progressPercent}%"></div>
             </div>
-            <!-- ALTERAÇÃO: Adicionado max-h-64 e overflow-y-auto para rolagem -->
-            <div class="space-y-1 max-h-64 overflow-y-auto pr-2">
-                ${items.map(item => `
-                    <div class="item-row flex items-center justify-between p-2 rounded-lg ${item.checked ? 'item-checked' : ''}" 
-                         ${!item.checked ? `data-name="${item.name.replace(/"/g, '&quot;')}" data-value="${item.value}"` : ''}>
-                        <label class="flex-1 text-sm text-gray-700">${item.name}</label>
-                        <!-- ALTERAÇÃO: Oculta o valor se o item estiver marcado -->
-                        ${item.checked 
-                            ? `<span class="text-sm font-semibold text-green-600">Presenteado!</span>` 
-                            : `<span class="text-sm font-semibold text-gray-800">${formatCurrency(item.value)}</span>`
-                        }
+            <div class="space-y-2 max-h-72 overflow-y-auto pr-2">
+                ${items.map(item => {
+                    const isComplete = item.sharesBought >= item.sharesTotal;
+                    const isShared = item.sharesTotal > 1;
+                    const quotaValue = item.value / item.sharesTotal;
+
+                    let valueDisplay = '';
+                    if (isComplete) {
+                        valueDisplay = `<span class="text-sm font-semibold text-green-600">Presenteado!</span>`;
+                    } else if (isShared) {
+                        valueDisplay = `<span class="text-sm font-semibold text-gray-800">Cotas de ${formatCurrency(quotaValue)}</span>`;
+                    } else {
+                        valueDisplay = `<span class="text-sm font-semibold text-gray-800">${formatCurrency(item.value)}</span>`;
+                    }
+
+                    return `
+                    <div class="item-row p-2 rounded-lg ${isComplete ? 'item-complete' : ''}" 
+                         ${!isComplete ? `data-name="${item.name.replace(/"/g, '&quot;')}" data-value="${item.value}" data-shares-total="${item.sharesTotal}" data-shares-bought="${item.sharesBought}"` : ''}>
+                        <div class="flex items-center justify-between">
+                            <label class="item-name flex-1 text-sm text-gray-700">${item.name}</label>
+                            ${valueDisplay}
+                        </div>
+                        ${isShared && !isComplete ? `
+                        <div class="mt-1">
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div class="bg-indigo-400 h-1.5 rounded-full" style="width: ${ (item.sharesBought / item.sharesTotal) * 100}%"></div>
+                            </div>
+                            <p class="text-xs text-right text-gray-500 mt-1">${item.sharesBought} de ${item.sharesTotal} cotas</p>
+                        </div>
+                        ` : ''}
                     </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>`;
         return card;
     }
 
     function updateProgress() {
         const totalItems = allItems.length;
-        const checkedItems = allItems.filter(item => item.checked).length;
-        const percentage = totalItems > 0 ? Math.round((checkedItems / totalItems) * 100) : 0;
+        const completedItems = allItems.filter(item => item.sharesBought >= item.sharesTotal).length;
+        const percentage = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        
         document.getElementById('progress-percentage').textContent = `${percentage}%`;
         document.getElementById('progress-bar').style.width = `${percentage}%`;
-        document.getElementById('progress-details').textContent = `${checkedItems} de ${totalItems} itens recebidos`;
+        document.getElementById('progress-details').textContent = `${completedItems} de ${totalItems} itens recebidos`;
     }
 
-    function openPixModal(itemName, itemValue) {
+    function openPixModal(item) {
         const modal = document.getElementById('pix-modal');
-        const qrcodeContainer = document.getElementById('qrcode-container');
+        const sharesSelector = document.getElementById('shares-selector');
+        const quantityInput = document.getElementById('shares-quantity');
         
-        document.getElementById('modal-item-name').textContent = `${itemName} - ${formatCurrency(itemValue)}`;
+        document.getElementById('modal-item-name').textContent = item.name;
 
-        const pixCode = generatePixCode(PIX_KEY, PIX_NAME, PIX_CITY, itemValue, itemName);
-        document.getElementById('pix-code').value = pixCode;
-        
-        qrcodeContainer.innerHTML = '';
-        new QRCode(qrcodeContainer, {
-            text: pixCode,
-            width: 192,
-            height: 192,
-        });
+        const isShared = item.sharesTotal > 1;
+        const quotaValue = item.value / item.sharesTotal;
+        const maxShares = item.sharesTotal - item.sharesBought;
 
+        const updatePix = (quantity) => {
+            const finalValue = isShared ? quotaValue * quantity : item.value;
+            const message = isShared ? `${quantity} cota(s) de ${item.name}` : item.name;
+            const pixCode = generatePixCode(PIX_KEY, PIX_NAME, PIX_CITY, finalValue, message);
+            
+            document.getElementById('pix-code').value = pixCode;
+            document.getElementById('qrcode-container').innerHTML = '';
+            new QRCode(document.getElementById('qrcode-container'), { text: pixCode, width: 192, height: 192 });
+        };
+
+        if (isShared) {
+            sharesSelector.classList.remove('hidden');
+            quantityInput.value = 1;
+            quantityInput.max = maxShares;
+
+            document.getElementById('shares-minus').onclick = () => {
+                let currentVal = parseInt(quantityInput.value);
+                if (currentVal > 1) {
+                    quantityInput.value = currentVal - 1;
+                    updatePix(quantityInput.value);
+                }
+            };
+            document.getElementById('shares-plus').onclick = () => {
+                let currentVal = parseInt(quantityInput.value);
+                if (currentVal < maxShares) {
+                    quantityInput.value = currentVal + 1;
+                    updatePix(quantityInput.value);
+                }
+            };
+        } else {
+            sharesSelector.classList.add('hidden');
+        }
+
+        updatePix(1);
         modal.classList.remove('hidden');
     }
 
@@ -281,35 +330,32 @@
         fetchData();
 
         const modal = document.getElementById('pix-modal');
-        const closeModalBtn = document.getElementById('close-modal-btn');
-        const copyPixCodeBtn = document.getElementById('copy-pix-code-btn');
-        const pixCodeTextarea = document.getElementById('pix-code');
-
-        closeModalBtn.addEventListener('click', () => modal.classList.add('hidden'));
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) modal.classList.add('hidden');
-        });
+        document.getElementById('close-modal-btn').addEventListener('click', () => modal.classList.add('hidden'));
+        modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.add('hidden'); });
         
-        copyPixCodeBtn.addEventListener('click', () => {
+        document.getElementById('copy-pix-code-btn').addEventListener('click', (event) => {
+            const pixCodeTextarea = document.getElementById('pix-code');
             pixCodeTextarea.select();
             try {
                 document.execCommand('copy');
-                copyPixCodeBtn.innerText = 'Copiado!';
-                setTimeout(() => { copyPixCodeBtn.innerText = 'Copiar Código PIX'; }, 2000);
+                event.target.innerText = 'Copiado!';
+                setTimeout(() => { event.target.innerText = 'Copiar Código PIX'; }, 2000);
             } catch (err) {
                 console.error('Erro ao copiar:', err);
-                copyPixCodeBtn.innerText = 'Erro ao copiar';
             }
         });
 
-        const categoriesContainer = document.getElementById('categories-container');
-        categoriesContainer.addEventListener('click', (event) => {
-            const itemRow = event.target.closest('.item-row:not(.item-checked)');
+        document.getElementById('categories-container').addEventListener('click', (event) => {
+            const itemRow = event.target.closest('.item-row:not(.item-complete)');
             if (itemRow) {
-                const itemName = itemRow.dataset.name;
-                const itemValue = parseFloat(itemRow.dataset.value);
-                if (itemName && !isNaN(itemValue)) {
-                    openPixModal(itemName, itemValue);
+                const { name, value, sharesTotal, sharesBought } = itemRow.dataset;
+                if (name) {
+                    openPixModal({
+                        name,
+                        value: parseFloat(value),
+                        sharesTotal: parseInt(sharesTotal),
+                        sharesBought: parseInt(sharesBought)
+                    });
                 }
             }
         });
