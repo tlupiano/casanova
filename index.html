@@ -64,16 +64,17 @@
     <!-- Cabeçalho -->
     <div class="text-center mb-8">
         <h1 id="main-title" class="elegant-title text-4xl text-gray-800 mb-4">🏠 Lista de Presentes Casa Nova</h1>
-        <p id="subtitle" class="text-lg text-gray-600 mb-6">Escolha um item ou contribua com cotas para os presentes de maior valor!</p>
         
         <!-- INÍCIO DAS NOVAS MENSAGENS -->
         <div class="max-w-2xl mx-auto bg-blue-100 border-l-4 border-blue-500 text-blue-800 p-4 rounded-lg mb-6 text-left shadow-sm">
-            <div class="flex">
-                <div class="py-1">
-                    <svg class="fill-current h-6 w-6 text-blue-500 mr-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zM9 5v6h2V5H9zm0 8v2h2v-2H9z"/></svg>
+            <div class="flex items-center">
+                <!-- ALTERAÇÃO: Ícone do PIX + texto "no Pix!" -->
+                <div class="flex flex-col items-center justify-center mr-4 shrink-0">
+                    <svg class="w-8 h-8 text-blue-500" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"></path><path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z"></path></svg>
+                    <span class="text-xs font-bold mt-1">no Pix!</span>
                 </div>
                 <div>
-                    <p class="font-bold">Como presentear via PIX:</p>
+                    <p class="font-bold">Como presentear:</p>
                     <p class="text-sm">Clique no presente desejado para gerar um QR Code e o código "Copia e Cola" com o valor exato do item ou da cota.</p>
                 </div>
             </div>
@@ -281,7 +282,16 @@
                     <div class="item-row p-2 rounded-lg ${isComplete ? 'item-complete' : ''}" 
                          ${!isComplete ? `data-name="${item.name.replace(/"/g, '&quot;')}" data-value="${item.value}" data-shares-total="${item.sharesTotal}" data-shares-bought="${item.sharesBought}"` : ''}>
                         <div class="flex items-center justify-between">
-                            <label class="item-name flex-1 text-sm text-gray-700">${item.name}</label>
+                            <div class="flex items-center flex-1 min-w-0">
+                                ${!isComplete ? `
+                                    <svg class="w-5 h-5 mr-3 text-green-600 shrink-0" fill="currentColor" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg"><path d="M11.917 11.71a2.046 2.046 0 0 1-1.454-.602l-2.1-2.1a.4.4 0 0 0-.551 0l-2.108 2.108a2.044 2.044 0 0 1-1.454.602h-.414l2.66 2.66c.83.83 2.177.83 3.007 0l2.667-2.668h-.253zM4.25 4.282c.55 0 1.066.214 1.454.602l2.108 2.108a.39.39 0 0 0 .552 0l2.1-2.1a2.044 2.044 0 0 1 1.453-.602h.253L9.503 1.623a2.127 2.127 0 0 0-3.007 0l-2.66 2.66h.414z"></path><path d="m14.377 6.496-1.612-1.612a.307.307 0 0 1-.114.023h-.733c-.379 0-.75.154-1.017.422l-2.1 2.1a1.005 1.005 0 0 1-1.425 0L5.268 5.32a1.448 1.448 0 0 0-1.018-.422h-.9a.306.306 0 0 1-.109-.021L1.623 6.496c-.83.83-.83 2.177 0 3.008l1.618 1.618a.305.305 0 0 1 .108-.022h.901c.38 0 .75-.153 1.018-.421L7.375 8.57a1.034 1.034 0 0 1 1.426 0l2.1 2.1c.267.268.638.421 1.017.421h.733c.04 0 .079.01.114.024l1.612-1.612c.83-.83.83-2.178 0-3.008z"></path></svg>
+                                ` : `
+                                    <!-- ALTERAÇÃO: Ícone de item completo agora é cinza -->
+                                    <svg class="w-5 h-5 mr-3 text-gray-400 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>
+                                `}
+                                <!-- ALTERAÇÃO: Removida a classe 'truncate' para permitir quebra de linha -->
+                                <label class="item-name flex-1 text-sm text-gray-700">${item.name}</label>
+                            </div>
                             ${valueDisplay}
                         </div>
                         ${isShared && !isComplete ? `
